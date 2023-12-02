@@ -10,6 +10,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
+import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
 import fr.free.nrw.commons.R
 import fr.free.nrw.commons.TestAppAdapter
 import fr.free.nrw.commons.TestCommonsApplication
@@ -24,7 +26,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.fakes.RoboMenuItem
 import org.wikipedia.AppAdapter
@@ -55,7 +56,7 @@ class LoginActivityUnitTests {
     private lateinit var keyEvent: KeyEvent
 
     @Mock
-    private lateinit var loginButton: Button
+    private lateinit var textView: TextView
 
     @Mock
     private lateinit var bundle: Bundle
@@ -74,10 +75,10 @@ class LoginActivityUnitTests {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         AppAdapter.set(TestAppAdapter())
         activity = Robolectric.buildActivity(LoginActivity::class.java).create().get()
-        context = RuntimeEnvironment.application.applicationContext
+        context = ApplicationProvider.getApplicationContext()
         menuItem = RoboMenuItem(null)
         Whitebox.setInternalState(activity, "progressDialog", progressDialog)
         Whitebox.setInternalState(activity, "applicationKvStore", applicationKvStore)
@@ -95,40 +96,12 @@ class LoginActivityUnitTests {
     fun testOnEditorActionCaseDefault() {
         val method: Method = LoginActivity::class.java.getDeclaredMethod(
             "onEditorAction",
+            TextView::class.java,
             Int::class.java,
             KeyEvent::class.java
         )
         method.isAccessible = true
-        method.invoke(activity, 0, keyEvent)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testOnEditorActionCaseLoginEnabledFirstCase() {
-        Whitebox.setInternalState(activity, "loginButton", loginButton)
-        `when`(loginButton.isEnabled).thenReturn(true)
-        val method: Method = LoginActivity::class.java.getDeclaredMethod(
-            "onEditorAction",
-            Int::class.java,
-            KeyEvent::class.java
-        )
-        method.isAccessible = true
-        method.invoke(activity, EditorInfo.IME_ACTION_DONE, keyEvent)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testOnEditorActionCaseLoginEnabledSecondCase() {
-        Whitebox.setInternalState(activity, "loginButton", loginButton)
-        `when`(loginButton.isEnabled).thenReturn(true)
-        `when`(keyEvent.keyCode).thenReturn(KeyEvent.KEYCODE_ENTER)
-        val method: Method = LoginActivity::class.java.getDeclaredMethod(
-            "onEditorAction",
-            Int::class.java,
-            KeyEvent::class.java
-        )
-        method.isAccessible = true
-        method.invoke(activity, 0, keyEvent)
+        method.invoke(activity, textView, 0, keyEvent)
     }
 
     @Test

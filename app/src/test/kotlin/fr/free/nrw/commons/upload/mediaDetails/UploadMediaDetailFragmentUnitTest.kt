@@ -16,6 +16,7 @@ import androidx.appcompat.widget.AppCompatImageButton
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.RecyclerView
+import androidx.test.core.app.ApplicationProvider
 import com.github.chrisbanes.photoview.PhotoView
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.mapboxsdk.geometry.LatLng
@@ -43,7 +44,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
@@ -98,6 +98,9 @@ class UploadMediaDetailFragmentUnitTest {
     private lateinit var place: Place
 
     @Mock
+    private var location: fr.free.nrw.commons.location.LatLng? = null
+
+    @Mock
     private lateinit var defaultKvStore: JsonKvStore
 
     @Mock
@@ -107,9 +110,9 @@ class UploadMediaDetailFragmentUnitTest {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
 
-        context = RuntimeEnvironment.application.applicationContext
+        context = ApplicationProvider.getApplicationContext()
         AppAdapter.set(TestAppAdapter())
 
         activity = Robolectric.buildActivity(UploadActivity::class.java).create().get()
@@ -172,7 +175,7 @@ class UploadMediaDetailFragmentUnitTest {
     @Throws(Exception::class)
     fun testSetImageTobeUploaded() {
         Shadows.shadowOf(Looper.getMainLooper()).idle()
-        fragment.setImageTobeUploaded(null, null)
+        fragment.setImageTobeUploaded(null, null, location)
     }
 
     @Test
@@ -374,7 +377,7 @@ class UploadMediaDetailFragmentUnitTest {
         `when`(latLng.longitude).thenReturn(0.0)
         `when`(uploadItem.gpsCoords).thenReturn(imageCoordinates)
         fragment.onActivityResult(1211, Activity.RESULT_OK, intent)
-        Mockito.verify(presenter, Mockito.times(0)).verifyImageQuality(0)
+        Mockito.verify(presenter, Mockito.times(0)).verifyImageQuality(0, location)
     }
 
     @Test
@@ -396,7 +399,7 @@ class UploadMediaDetailFragmentUnitTest {
         `when`(latLng.longitude).thenReturn(0.0)
         `when`(uploadItem.gpsCoords).thenReturn(imageCoordinates)
         fragment.onActivityResult(1211, Activity.RESULT_OK, intent)
-        Mockito.verify(presenter, Mockito.times(1)).verifyImageQuality(0)
+        Mockito.verify(presenter, Mockito.times(1)).verifyImageQuality(0, null)
     }
 
     @Test

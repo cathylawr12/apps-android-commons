@@ -221,8 +221,7 @@ public class SearchActivity extends BaseActivity
         searchView.setVisibility(View.GONE);// to remove searchview when mediaDetails fragment open
         if (mediaDetails == null || !mediaDetails.isVisible()) {
             // set isFeaturedImage true for featured images, to include author field on media detail
-            mediaDetails = new MediaDetailPagerFragment(false, true);
-            FragmentManager supportFragmentManager = getSupportFragmentManager();
+            mediaDetails = MediaDetailPagerFragment.newInstance(false, true);
             supportFragmentManager
                     .beginTransaction()
                     .hide(supportFragmentManager.getFragments().get(supportFragmentManager.getBackStackEntryCount()))
@@ -258,13 +257,23 @@ public class SearchActivity extends BaseActivity
      */
     @Override
     public void onBackPressed() {
-        if (getSupportFragmentManager().getBackStackEntryCount() == 1){
+        //Remove the backstack entry that gets added when share button is clicked
+        //fixing:https://github.com/commons-app/apps-android-commons/issues/2296
+        if (getSupportFragmentManager().getBackStackEntryCount() == 2) {
+            supportFragmentManager
+                .beginTransaction()
+                .remove(mediaDetails)
+                .commit();
+            supportFragmentManager.popBackStack();
+            supportFragmentManager.executePendingTransactions();
+        }
+        if (getSupportFragmentManager().getBackStackEntryCount() == 1) {
             // back to search so show search toolbar and hide navigation toolbar
             searchView.setVisibility(View.VISIBLE);//set the searchview
             tabLayout.setVisibility(View.VISIBLE);
             viewPager.setVisibility(View.VISIBLE);
             mediaContainer.setVisibility(View.GONE);
-        }else {
+        } else {
             toolbar.setVisibility(View.GONE);
         }
         super.onBackPressed();

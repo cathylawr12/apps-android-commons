@@ -10,6 +10,7 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
+import androidx.test.core.app.ApplicationProvider
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -29,7 +30,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
@@ -62,9 +62,9 @@ class SettingsFragmentUnitTests {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         val activity = Robolectric.buildActivity(SettingsActivity::class.java).create().get()
-        context = RuntimeEnvironment.application.applicationContext
+        context = ApplicationProvider.getApplicationContext()
 
         fragment = SettingsFragment()
         fragmentManager = activity.supportFragmentManager
@@ -96,17 +96,6 @@ class SettingsFragmentUnitTests {
         )
         method.isAccessible = true
         method.invoke(fragment)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testTelemetryOptInOut() {
-        val method: Method = SettingsFragment::class.java.getDeclaredMethod(
-            "telemetryOptInOut",
-            Boolean::class.java
-        )
-        method.isAccessible = true
-        method.invoke(fragment, true)
     }
 
     @Test

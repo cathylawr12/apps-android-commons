@@ -3,6 +3,7 @@ package fr.free.nrw.commons.review
 import android.app.Activity
 import android.content.Context
 import android.os.Looper
+import androidx.test.core.app.ApplicationProvider
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.soloader.SoLoader
 import com.nhaarman.mockitokotlin2.verify
@@ -12,9 +13,9 @@ import fr.free.nrw.commons.R
 import fr.free.nrw.commons.TestAppAdapter
 import fr.free.nrw.commons.TestCommonsApplication
 import fr.free.nrw.commons.delete.DeleteHelper
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import media
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +24,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
@@ -56,8 +56,8 @@ class ReviewControllerTest {
     @Before
     @Throws(Exception::class)
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
-        context = RuntimeEnvironment.application.applicationContext
+        MockitoAnnotations.openMocks(this)
+        context = ApplicationProvider.getApplicationContext()
         AppAdapter.set(TestAppAdapter())
         SoLoader.setInTestMode()
         Fresco.initialize(context)

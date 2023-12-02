@@ -23,7 +23,7 @@ import java.util.Map;
 
 @SuppressWarnings("unused")
 public class MwQueryResult extends BaseModel implements PostProcessingTypeAdapter.PostProcessable {
-    @Nullable private List<MwQueryPage> pages;
+    @SerializedName("pages") @Nullable private List<MwQueryPage> pages;
     @Nullable private List<Redirect> redirects;
     @Nullable private List<ConvertedTitle> converted;
     @SerializedName("userinfo") private UserInfo userInfo;
@@ -35,7 +35,6 @@ public class MwQueryResult extends BaseModel implements PostProcessingTypeAdapte
     @Nullable private NotificationList notifications;
     @Nullable private Map<String, Notification.UnreadNotificationWikiItem> unreadnotificationpages;
     @SerializedName("general") @Nullable private SiteInfo generalSiteInfo;
-    @Nullable private List<RecentChange> recentchanges;
     @SerializedName("wikimediaeditortaskscounts") @Nullable private EditorTaskCounts editorTaskCounts;
     @SerializedName("allimages") @Nullable private List<ImageDetails> allImages;
     @SerializedName("geosearch") @Nullable private List<GeoSearchItem> geoSearch;
@@ -101,10 +100,6 @@ public class MwQueryResult extends BaseModel implements PostProcessingTypeAdapte
             }
         }
         return captchaId;
-    }
-
-    @Nullable public List<RecentChange> getRecentChanges() {
-        return recentchanges;
     }
 
     @Nullable public ListUserResponse getUserResponse(@NonNull String userName) {

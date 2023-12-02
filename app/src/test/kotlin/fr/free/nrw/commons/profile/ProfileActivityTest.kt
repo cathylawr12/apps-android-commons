@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.widget.Toolbar
+import androidx.test.core.app.ApplicationProvider
 import fr.free.nrw.commons.R
 import fr.free.nrw.commons.TestCommonsApplication
 import org.junit.Assert
@@ -15,7 +17,6 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.fakes.RoboMenu
@@ -38,9 +39,9 @@ class ProfileActivityTest {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         activity = Robolectric.buildActivity(ProfileActivity::class.java).create().get()
-        mockContext = RuntimeEnvironment.application.applicationContext
+        mockContext = ApplicationProvider.getApplicationContext()
     }
 
     @Test
@@ -106,4 +107,17 @@ class ProfileActivityTest {
     fun testOnSupportNavigateUp() {
         activity.onSupportNavigateUp()
     }
+    @Test
+    fun testToolbarNotNull() {
+        val toolbar = activity.findViewById<Toolbar>(R.id.toolbar)
+        Assert.assertNotNull(toolbar)
+    }
+
+    @Test
+    fun testOptionsMenu() {
+        val menu: Menu = RoboMenu(mockContext)
+        activity.onCreateOptionsMenu(menu)
+        Assert.assertEquals(1, menu.size())
+    }
+
 }

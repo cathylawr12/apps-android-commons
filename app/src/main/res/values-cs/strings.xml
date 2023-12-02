@@ -467,9 +467,9 @@
   <string name="delete_helper_show_deletion_message_if">Soubor %1$s byl nominován na smazání.</string>
   <string name="delete_helper_show_deletion_title_failed">Chyba</string>
   <string name="delete_helper_show_deletion_message_else">Nepodařilo se požádat o smazání.</string>
-  <string name="delete_helper_ask_spam_selfie">Selfie</string>
-  <string name="delete_helper_ask_spam_blurry">Rozmazané</string>
-  <string name="delete_helper_ask_spam_nonsense">Nesmysl</string>
+  <string name="delete_helper_ask_spam_selfie" fuzzy="true">Selfie</string>
+  <string name="delete_helper_ask_spam_blurry" fuzzy="true">Rozmazané</string>
+  <string name="delete_helper_ask_spam_nonsense" fuzzy="true">Nesmysl</string>
   <string name="delete_helper_ask_reason_copyright_press_photo">Tisková fotka</string>
   <string name="delete_helper_ask_reason_copyright_internet_photo">Náhodná fotka z internetu</string>
   <string name="delete_helper_ask_reason_copyright_logo">Logo</string>
@@ -488,7 +488,7 @@
   <string name="nearby_search_hint">Most, muzeum, hotel atd.</string>
   <string name="you_must_reset_your_passsword">Při přihlášení nastala chyba, musíte si resetovat vaše heslo!</string>
   <string name="upload_nearby_place_found_title">Místo v okolí nalezeno</string>
-  <string name="upload_nearby_place_found_description">Je toto fotka místa %1$s?</string>
+  <string name="upload_nearby_place_found_description" fuzzy="true">Je toto fotka místa %1$s?</string>
   <string name="title_app_shortcut_setting">Nastavení</string>
   <string name="wallpaper_set_unsuccessfully">Něco se pokazilo. Tapetu se nepodařilo nastavit</string>
   <string name="setting_wallpaper_dialog_title">Nastavit jako tapetu</string>

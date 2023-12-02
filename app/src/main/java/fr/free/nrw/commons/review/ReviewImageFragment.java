@@ -127,13 +127,12 @@ public class ReviewImageFragment extends CommonsDaggerSupportFragment {
                 enableButtons();
                 question = getString(R.string.review_thanks);
 
-                // Get existing user name if it is already saved using savedInstanceState else get from reviewController
-                if (savedInstanceState == null) {
-                    if (getReviewActivity().reviewController.firstRevision != null) {
-                        user = getReviewActivity().reviewController.firstRevision.getUser();
-                    }
+                if (getReviewActivity().reviewController.firstRevision != null) {
+                    user = getReviewActivity().reviewController.firstRevision.getUser();
                 } else {
-                    user = savedInstanceState.getString(SAVED_USER);
+                    if(savedInstanceState != null) {
+                        user = savedInstanceState.getString(SAVED_USER);
+                    }
                 }
 
                 //if the user is null because of whatsoever reason, review will not be sent anyways

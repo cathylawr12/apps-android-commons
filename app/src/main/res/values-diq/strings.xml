@@ -15,6 +15,12 @@
   <string name="commons_logo">Logoy Commonsi</string>
   <string name="commons_website">Websitey Commonsi</string>
   <string name="submit">Bırışe</string>
+  <string name="show_captions">Bınnuşte</string>
+  <string name="row_item_language_description">Şınasnayışê zıwani</string>
+  <string name="row_item_caption">Bınnuşte</string>
+  <string name="show_captions_description">Şınasnayış</string>
+  <string name="nearby_row_image">Resım</string>
+  <string name="nearby_all">Pêro</string>
   <string name="appwidget_img">Fotrafê roci</string>
   <plurals name="uploads_pending_notification_indicator">
     <item quantity="one">1 dosya bar bena</item>
@@ -153,7 +159,6 @@
   <string name="location_permission_title">Mısadey Waştışê Lokasyoni</string>
   <string name="ok">TEMAM</string>
   <string name="warning">Tembe kem</string>
-  <string name="duplicate_image_found">Resımo tekrarın nêvineya</string>
   <string name="upload">Bar ke</string>
   <string name="yes">Eya</string>
   <string name="no">Nê</string>
@@ -241,6 +246,7 @@
   <string name="search_tab_title_depictions">Obcey</string>
   <string name="explore_tab_title_featured">Weçinaye</string>
   <string name="explore_tab_title_mobile">Raya mobiliya biyo bar</string>
+  <string name="explore_tab_title_map">Xerita</string>
   <string name="successful_wikidata_edit">Resım , Wikidata dê biyo obcey %1$s miyan!</string>
   <string name="menu_set_wallpaper">Wallpaper eyar kerê</string>
   <string name="wallpaper_set_successfully">Wallpaper eyar biyo!</string>
@@ -283,6 +289,9 @@
   <string name="provider_bookmarks">Nişan</string>
   <string name="provider_bookmarks_location">Nişani</string>
   <string name="no_categories_selected">Kategoriyê ke nêweçiniyê</string>
+  <string name="back_button_warning">Barkerdışi bıtexelne</string>
+  <string name="option_allow">Mısade bıde</string>
+  <string name="option_dismiss">Red ke</string>
   <string name="nominate_for_deletion_done">Temam</string>
   <string name="review_thanks_yes_button_text" fuzzy="true">Eya, çıra mebo</string>
   <string name="review_thanks_no_button_text" fuzzy="true">Resımo bahdoyên</string>
@@ -297,8 +306,8 @@
   <string name="exif_tag_name_location">Herune</string>
   <string name="exif_tag_name_cameraModel">Modelê kamera</string>
   <string name="image_info">Melumatê resımi</string>
-  <string name="delete_helper_ask_spam_blurry">Xesratın</string>
-  <string name="delete_helper_ask_spam_nonsense">Bêmena</string>
+  <string name="delete_helper_ask_spam_blurry" fuzzy="true">Xesratın</string>
+  <string name="delete_helper_ask_spam_nonsense" fuzzy="true">Bêmena</string>
   <string name="delete_helper_ask_reason_copyright_press_photo">Fotrafi çap kerê</string>
   <string name="delete_helper_ask_reason_copyright_internet_photo">İnternet ra resimo raştameye</string>
   <string name="delete_helper_ask_reason_copyright_logo">Logo</string>
@@ -336,9 +345,9 @@
   <string name="leaderboard_nearby">Nezdı ra</string>
   <string name="leaderboard_used">Gureyniyaye</string>
   <string name="leaderboard_my_rank_button_text">Rêza mı</string>
-  <string name="mapbox_telemetry" fuzzy="true">Telemetreyi Devre ra vece</string>
   <string name="license_step_title">Lisansê Medya</string>
   <string name="media_detail_step_title">Teferuatê medya</string>
   <string name="read_help_link">Tayêna bıwane</string>
+  <string name="description">Şınasnayış</string>
   <string name="reset">Raçarne</string>
 </resources>

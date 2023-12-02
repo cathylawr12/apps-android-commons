@@ -7,6 +7,7 @@ import android.widget.AdapterView
 import android.widget.GridLayout
 import android.widget.ListView
 import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -26,7 +27,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import java.lang.reflect.Field
@@ -66,11 +66,11 @@ class UploadMediaDetailAdapterUnitTest {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         uploadMediaDetails = mutableListOf(uploadMediaDetail, uploadMediaDetail)
         activity = Robolectric.buildActivity(UploadActivity::class.java).get()
         adapter = UploadMediaDetailAdapter("", recentLanguagesDao)
-        context = RuntimeEnvironment.application.applicationContext
+        context = ApplicationProvider.getApplicationContext()
         Whitebox.setInternalState(adapter, "uploadMediaDetails", uploadMediaDetails)
         Whitebox.setInternalState(adapter, "eventListener", eventListener)
         Whitebox.setInternalState(adapter, "recentLanguagesTextView", textView)
@@ -247,4 +247,50 @@ class UploadMediaDetailAdapterUnitTest {
         verify(adapterView, times(3)).adapter
     }
 
+    @Test
+    fun testRemoveLeadingAndTrailingWhitespace() {
+        // empty space
+        val test1 = "  test  "
+        val expected1 = "test"
+        Assert.assertEquals(expected1, viewHolder.removeLeadingAndTrailingWhitespace(test1))
+
+        val test2 = "  test test "
+        val expected2 = "test test"
+        Assert.assertEquals(expected2, viewHolder.removeLeadingAndTrailingWhitespace(test2))
+
+        // No whitespace
+        val test3 = "No trailing space";
+        val expected3 = "No trailing space";
+        Assert.assertEquals(expected3, viewHolder.removeLeadingAndTrailingWhitespace(test3))
+
+        // blank string
+        val test4 = " \r \t  "
+        val expected4 = "";
+        Assert.assertEquals(expected4, viewHolder.removeLeadingAndTrailingWhitespace(test4))
+    }
+
+    @Test
+    fun testRemoveLeadingAndTrailingInstanceTab() {
+        val test = "\ttest\t"
+        val expected = "test"
+        Assert.assertEquals(expected, viewHolder.removeLeadingAndTrailingWhitespace(test))
+    }
+
+    @Test
+    fun testRemoveLeadingAndTrailingCarriageReturn() {
+        val test = "\rtest\r"
+        val expected = "test"
+        Assert.assertEquals(expected, viewHolder.removeLeadingAndTrailingWhitespace(test))
+    }
+
+    @Test
+    fun testCaptionJapaneseCharacters() {
+        val test1 = "テスト　テスト"
+        val expected1 = "テスト テスト"
+        Assert.assertEquals(expected1, viewHolder.convertIdeographicSpaceToLatinSpace(test1));
+
+        val test2 = "　\r　\t　テスト　\r　\t　"
+        val expected2 = "テスト"
+        Assert.assertEquals(expected2, viewHolder.removeLeadingAndTrailingWhitespace(test2))
+    }
 }

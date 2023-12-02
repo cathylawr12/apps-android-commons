@@ -8,14 +8,14 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
-import com.facebook.imagepipeline.request.ImageRequest
 import com.facebook.soloader.SoLoader
-import com.nhaarman.mockitokotlin2.verify
 import fr.free.nrw.commons.Media
 import fr.free.nrw.commons.R
 import fr.free.nrw.commons.TestCommonsApplication
+import fr.free.nrw.commons.TestUtility.setFinalStatic
 import fr.free.nrw.commons.media.MediaClient
 import fr.free.nrw.commons.profile.ProfileActivity
 import io.reactivex.disposables.CompositeDisposable
@@ -24,22 +24,23 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
-import org.mockito.Mockito
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
+import org.powermock.core.classloader.annotations.PrepareForTest
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
-import java.io.File
+import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [21], application = TestCommonsApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
+@PrepareForTest(ContributionViewHolder::class)
 class ContributionViewHolderUnitTests {
 
     private lateinit var contributionViewHolder: ContributionViewHolder
@@ -79,7 +80,7 @@ class ContributionViewHolderUnitTests {
     fun setUp() {
         MockitoAnnotations.initMocks(this)
         SoLoader.setInTestMode()
-        Fresco.initialize(RuntimeEnvironment.application.applicationContext)
+        Fresco.initialize(ApplicationProvider.getApplicationContext())
         activity = Robolectric.buildActivity(ProfileActivity::class.java).create().get()
         parent = LayoutInflater.from(activity).inflate(R.layout.layout_contribution, null)
         contributionViewHolder = ContributionViewHolder(parent, callback, mediaClient)
@@ -120,14 +121,9 @@ class ContributionViewHolderUnitTests {
 
         progressView = parent.findViewById(R.id.contributionProgress)
         Whitebox.setInternalState(contributionViewHolder, "progressView", progressView)
-
-
-        Whitebox.setInternalState(
-            contributionViewHolder,
-            "compositeDisposable",
-            compositeDisposable
-        )
-
+        setFinalStatic(
+                ContributionViewHolder::class.java.getDeclaredField("compositeDisposable"),
+                compositeDisposable)
     }
 
     @Test

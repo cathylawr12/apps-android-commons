@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -113,7 +114,7 @@ public class ReviewActivity extends BaseActivity {
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
+        
         reviewController = new ReviewController(deleteHelper, this);
 
         reviewPagerAdapter = new ReviewPagerAdapter(getSupportFragmentManager());
@@ -161,14 +162,31 @@ public class ReviewActivity extends BaseActivity {
         hasNonHiddenCategories = false;
         progressBar.setVisibility(View.VISIBLE);
         reviewPager.setCurrentItem(0);
+        // Finds non-hidden categories from Media instance
         compositeDisposable.add(reviewHelper.getRandomMedia()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(media -> {
+                .subscribe(this::checkWhetherFileIsUsedInWikis));
+        return true;
+    }
+
+    /**
+     * Check whether media is used or not in any Wiki Page
+     */
+    @SuppressLint("CheckResult")
+    private void checkWhetherFileIsUsedInWikis(final Media media) {
+        compositeDisposable.add(reviewHelper.checkFileUsage(media.getFilename())
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(result -> {
+                // result false indicates media is not used in any wiki
+                if (!result) {
                     // Finds non-hidden categories from Media instance
                     findNonHiddenCategories(media);
-                }));
-        return true;
+                } else {
+                    runRandomizer();
+                }
+            }));
     }
 
     /**
@@ -191,6 +209,7 @@ public class ReviewActivity extends BaseActivity {
 
     @SuppressLint("CheckResult")
     private void updateImage(Media media) {
+        reviewHelper.addViewedImagesToDB(media.getPageId());
         this.media = media;
         String fileName = media.getFilename();
         if (fileName.length() == 0) {
@@ -207,7 +226,7 @@ public class ReviewActivity extends BaseActivity {
                 .subscribe(revision -> {
                     reviewController.firstRevision = revision;
                     reviewPagerAdapter.updateFileInformation();
-                    String caption = String.format(getString(R.string.review_is_uploaded_by), fileName, revision.getUser());
+                    @SuppressLint({"StringFormatInvalid", "LocalSuppress"}) String caption = String.format(getString(R.string.review_is_uploaded_by), fileName, revision.getUser());
                     imageCaption.setText(caption);
                     progressBar.setVisibility(View.GONE);
                     reviewImageFragment = getInstanceOfReviewImageFragment();

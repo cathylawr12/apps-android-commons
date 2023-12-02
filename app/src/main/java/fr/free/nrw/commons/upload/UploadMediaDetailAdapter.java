@@ -1,7 +1,6 @@
 package fr.free.nrw.commons.upload;
 
 import android.app.Dialog;
-import android.content.Intent;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextUtils;
@@ -23,7 +22,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import com.google.android.material.textfield.TextInputLayout;
 import fr.free.nrw.commons.R;
-import fr.free.nrw.commons.contributions.MainActivity;
 import fr.free.nrw.commons.recentlanguages.Language;
 import fr.free.nrw.commons.recentlanguages.RecentLanguagesAdapter;
 import fr.free.nrw.commons.recentlanguages.RecentLanguagesDao;
@@ -32,9 +30,8 @@ import fr.free.nrw.commons.utils.AbstractTextWatcher;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
-import javax.inject.Inject;
+import java.util.regex.Pattern;
 import timber.log.Timber;
 
 public class UploadMediaDetailAdapter extends RecyclerView.Adapter<UploadMediaDetailAdapter.ViewHolder> {
@@ -89,6 +86,21 @@ public class UploadMediaDetailAdapter extends RecyclerView.Adapter<UploadMediaDe
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         return new ViewHolder(LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.row_item_description, parent, false));
+    }
+
+    /**
+     * This is a workaround for a known bug by android here https://issuetracker.google.com/issues/37095917
+     * makes the edit text on second and subsequent fragments inside an adapter receptive to long click
+     * for copy/paste options
+     * @param holder the view holder
+     */
+    @Override
+    public void onViewAttachedToWindow(@NonNull final ViewHolder holder) {
+        super.onViewAttachedToWindow(holder);
+        holder.captionItemEditText.setEnabled(false);
+        holder.captionItemEditText.setEnabled(true);
+        holder.descItemEditText.setEnabled(false);
+        holder.descItemEditText.setEnabled(true);
     }
 
     @Override
@@ -177,7 +189,7 @@ public class UploadMediaDetailAdapter extends RecyclerView.Adapter<UploadMediaDe
             if (position == 0) {
                 removeButton.setVisibility(View.GONE);
                 captionInputLayout.setEndIconMode(TextInputLayout.END_ICON_CUSTOM);
-                captionInputLayout.setEndIconDrawable(R.drawable.mapbox_info_icon_default);
+                captionInputLayout.setEndIconDrawable(R.drawable.maplibre_info_icon_default);
                 captionInputLayout.setEndIconOnClickListener(v ->
                     callback.showAlert(R.string.media_detail_caption, R.string.caption_info));
                 Objects.requireNonNull(captionInputLayout.getEditText()).setFilters(new InputFilter[] {
@@ -185,7 +197,7 @@ public class UploadMediaDetailAdapter extends RecyclerView.Adapter<UploadMediaDe
                 });
 
                 descInputLayout.setEndIconMode(TextInputLayout.END_ICON_CUSTOM);
-                descInputLayout.setEndIconDrawable(R.drawable.mapbox_info_icon_default);
+                descInputLayout.setEndIconDrawable(R.drawable.maplibre_info_icon_default);
                 descInputLayout.setEndIconOnClickListener(v ->
                     callback.showAlert(R.string.media_detail_description, R.string.description_info));
 
@@ -197,7 +209,8 @@ public class UploadMediaDetailAdapter extends RecyclerView.Adapter<UploadMediaDe
 
             removeButton.setOnClickListener(v -> removeDescription(uploadMediaDetail, position));
             captionListener = new AbstractTextWatcher(
-                captionText -> uploadMediaDetails.get(position).setCaptionText(captionText));
+                captionText -> uploadMediaDetails.get(position).setCaptionText(convertIdeographicSpaceToLatinSpace(
+                    removeLeadingAndTrailingWhitespace(captionText))));
             descriptionListener = new AbstractTextWatcher(
                 descriptionText -> uploadMediaDetails.get(position).setDescriptionText(descriptionText));
             captionItemEditText.addTextChangedListener(captionListener);
@@ -418,10 +431,52 @@ public class UploadMediaDetailAdapter extends RecyclerView.Adapter<UploadMediaDe
                 languageHistoryListView.setAdapter(recentLanguagesAdapter);
             }
         }
+
+        /**
+         * Removes any leading and trailing whitespace from the source text.
+         * @param source input string
+         * @return a string without leading and trailing whitespace
+         */
+        public String removeLeadingAndTrailingWhitespace(String source) {
+            // This method can be replaced with the inbuilt String::strip when updated to JDK 11.
+            // Note that String::trim does not adequately remove all whitespace chars.
+            int firstNonWhitespaceIndex = 0;
+            while (firstNonWhitespaceIndex < source.length()) {
+                if (Character.isWhitespace(source.charAt(firstNonWhitespaceIndex))) {
+                    firstNonWhitespaceIndex++;
+                } else {
+                    break;
+                }
+            }
+            if (firstNonWhitespaceIndex == source.length()) {
+                return "";
+            }
+
+            int lastNonWhitespaceIndex = source.length() - 1;
+            while (lastNonWhitespaceIndex > firstNonWhitespaceIndex) {
+                if (Character.isWhitespace(source.charAt(lastNonWhitespaceIndex))) {
+                    lastNonWhitespaceIndex--;
+                } else {
+                    break;
+                }
+            }
+
+            return source.substring(firstNonWhitespaceIndex, lastNonWhitespaceIndex + 1);
+        }
+
+        /**
+         * Convert Ideographic space to Latin space
+         * @param source the source text
+         * @return a string with Latin spaces instead of Ideographic spaces
+         */
+        public String convertIdeographicSpaceToLatinSpace(String source) {
+            Pattern ideographicSpacePattern = Pattern.compile("\\x{3000}");
+            return ideographicSpacePattern.matcher(source).replaceAll(" ");
+        }
+
     }
 
     public interface Callback {
-
         void showAlert(int mediaDetailDescription, int descriptionInfo);
     }
 

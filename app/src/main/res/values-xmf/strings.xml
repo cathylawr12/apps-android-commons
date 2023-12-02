@@ -164,7 +164,6 @@
   <string name="location_permission_title">ორენიშ გჷმორინაფაშ მოთხირი</string>
   <string name="ok">ჯგირი</string>
   <string name="warning">ხვილაფა</string>
-  <string name="duplicate_image_found">ძირაფილი რე სურათიშ ანგი</string>
   <string name="upload">ეხარგუა</string>
   <string name="yes">ქო</string>
   <string name="no">ვარი</string>
@@ -335,8 +334,8 @@
   <string name="nominate_for_deletion_done">ღოლამირჷ რე</string>
   <string name="error_occurred_in_picking_images">სურათიშ ეხარგუაშ ბორჯის ჩილათაქ მოხვადჷ</string>
   <string name="please_wait">ქორთხინთ ქჷმიცადით …</string>
-  <string name="delete_helper_ask_spam_selfie">სელფი</string>
-  <string name="delete_helper_ask_spam_blurry">ჸურილი</string>
+  <string name="delete_helper_ask_spam_selfie" fuzzy="true">სელფი</string>
+  <string name="delete_helper_ask_spam_blurry" fuzzy="true">ჸურილი</string>
   <string name="delete_helper_ask_alert_set_positive_button_reason">თიშენ ნამჷ-და თინა რე</string>
   <string name="title_app_shortcut_bookmark">მიკოწონებეფი</string>
   <string name="title_app_shortcut_setting">პარამეტრეფი</string>

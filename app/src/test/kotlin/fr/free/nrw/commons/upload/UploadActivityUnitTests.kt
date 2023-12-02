@@ -2,6 +2,7 @@ package fr.free.nrw.commons.upload
 
 import android.content.Context
 import android.content.Intent
+import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.testing.WorkManagerTestInitHelper
 import fr.free.nrw.commons.CommonsApplication
@@ -23,7 +24,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.wikipedia.AppAdapter
@@ -52,14 +52,14 @@ class UploadActivityUnitTests {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         AppAdapter.set(TestAppAdapter())
         val intent = Intent()
         val list = ArrayList<UploadableFile>()
         list.add(uploadableFile)
         intent.putParcelableArrayListExtra(UploadActivity.EXTRA_FILES, list)
         activity = Robolectric.buildActivity(UploadActivity::class.java, intent).create().get()
-        context = RuntimeEnvironment.application.applicationContext
+        context = ApplicationProvider.getApplicationContext()
 
         Whitebox.setInternalState(activity, "fragments", mutableListOf(uploadBaseFragment))
         Whitebox.setInternalState(activity, "presenter", presenter)
@@ -231,26 +231,6 @@ class UploadActivityUnitTests {
         )
         method.isAccessible = true
         method.invoke(activity)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testShowInfoAlert() {
-        val method: Method = UploadActivity::class.java.getDeclaredMethod(
-            "showInfoAlert",
-            Int::class.java,
-            Int::class.java,
-            Runnable::class.java,
-            Array<String>::class.java
-        )
-        method.isAccessible = true
-        method.invoke(
-            activity,
-            R.string.block_notification_title,
-            R.string.block_notification,
-            mock(Runnable::class.java),
-            arrayOf("")
-        )
     }
 
     @Test

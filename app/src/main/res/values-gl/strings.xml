@@ -12,7 +12,7 @@
 * Vivaelcelta
 -->
 <resources>
-  <string name="commons_facebook">Páxina de Facebook en Commons</string>
+  <string name="commons_facebook">Páxina de Commons en Facebook</string>
   <string name="commons_github">Código fonte de Commons en Github</string>
   <string name="commons_logo">Logo de Commons</string>
   <string name="commons_website">Sitio web de Commons</string>
@@ -112,7 +112,7 @@
   <string name="menu_about">Acerca de</string>
   <string name="about_license">A aplicación Wikimedia Commons é unha aplicación de código aberto creada e mantida polos cesionarios e voluntarios da comunidade de Wikimedia. A Fundación Wikimedia non está involucrada na creación, desenvolvemento ou mantemento da aplicación.</string>
   <string name="about_improve">Crear unha nova &lt;a href=\"%1$s\"&gt;incidencia&lt;/a&gt; para informar de problemas e suxestións.</string>
-  <string name="about_privacy_policy">Política de privacidade</string>
+  <string name="about_privacy_policy">Política de protección de datos</string>
   <string name="about_credits">Créditos</string>
   <string name="title_activity_about">Acerca de</string>
   <string name="menu_feedback">Enviar comentarios (por correo electrónico)</string>
@@ -410,9 +410,9 @@
   <string name="delete_helper_show_deletion_title">Nomeando para borrado</string>
   <string name="delete_helper_show_deletion_title_success">Todo correcto</string>
   <string name="delete_helper_show_deletion_title_failed">Fallou</string>
-  <string name="delete_helper_ask_spam_selfie">Un autorretrato</string>
-  <string name="delete_helper_ask_spam_blurry">Borrosa</string>
-  <string name="delete_helper_ask_spam_nonsense">Sen sentido</string>
+  <string name="delete_helper_ask_spam_selfie" fuzzy="true">Un autorretrato</string>
+  <string name="delete_helper_ask_spam_blurry" fuzzy="true">Borrosa</string>
+  <string name="delete_helper_ask_spam_nonsense" fuzzy="true">Sen sentido</string>
   <string name="delete_helper_ask_reason_copyright_press_photo">Foto de prensa</string>
   <string name="delete_helper_ask_reason_copyright_internet_photo">Foto aleatoria de internet</string>
   <string name="delete_helper_ask_reason_copyright_logo">Logo</string>

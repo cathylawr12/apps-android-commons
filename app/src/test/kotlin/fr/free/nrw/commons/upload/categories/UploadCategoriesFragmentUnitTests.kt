@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.recyclerview.widget.RecyclerView
+import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.textfield.TextInputLayout
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -35,7 +36,6 @@ import org.mockito.MockitoAnnotations
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
@@ -101,8 +101,8 @@ class UploadCategoriesFragmentUnitTests {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
-        context = RuntimeEnvironment.application.applicationContext
+        MockitoAnnotations.openMocks(this)
+        context = ApplicationProvider.getApplicationContext()
         AppAdapter.set(TestAppAdapter())
         val activity = Robolectric.buildActivity(UploadActivity::class.java).create().get()
         fragment = UploadCategoriesFragment()
@@ -145,9 +145,34 @@ class UploadCategoriesFragmentUnitTests {
 
     @Test
     @Throws(Exception::class)
-    fun testOnViewCreated() {
+    fun testInitMethod() {
+        val method: Method = UploadCategoriesFragment::class.java.getDeclaredMethod(
+            "init"
+        )
         Shadows.shadowOf(Looper.getMainLooper()).idle()
-        fragment.onViewCreated(view, null)
+        method.isAccessible = true
+        method.invoke(fragment)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun `Test init when media is non null`() {
+        Whitebox.setInternalState(fragment, "media", media)
+        val method: Method = UploadCategoriesFragment::class.java.getDeclaredMethod(
+            "init"
+        )
+        method.isAccessible = true
+        method.invoke(fragment)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testFragmentOnBecameVisible() {
+        val method: Method = UploadCategoriesFragment::class.java.getDeclaredMethod(
+            "onBecameVisible"
+        )
+        method.isAccessible = true
+        method.invoke(fragment)
     }
 
     @Test

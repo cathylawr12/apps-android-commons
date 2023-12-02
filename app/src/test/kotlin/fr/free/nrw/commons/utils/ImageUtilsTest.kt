@@ -3,6 +3,7 @@ package fr.free.nrw.commons.utils
 import android.app.ProgressDialog
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.test.core.app.ApplicationProvider
 import fr.free.nrw.commons.TestCommonsApplication
 import fr.free.nrw.commons.location.LatLng
 import fr.free.nrw.commons.mwapi.OkHttpJsonApiClient
@@ -12,11 +13,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import java.io.File
@@ -45,13 +45,36 @@ class ImageUtilsTest {
 
     @Before
     fun setup() {
-        MockitoAnnotations.initMocks(this)
-        context = RuntimeEnvironment.application.applicationContext
+        MockitoAnnotations.openMocks(this)
+        context = ApplicationProvider.getApplicationContext()
     }
 
     @Test
     fun testCheckIfImageIsTooDarkCaseException() {
-        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark(""), ImageUtils.IMAGE_OK)
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("")
+            , ImageUtils.IMAGE_OK)
+    }
+
+    // Refer: testCheckIfImageIsTooDarkCaseException()
+    @Test
+    fun testCheckIfProperImageIsTooDark() {
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("src/test/resources/ImageTest/ok1.jpg")
+            , ImageUtils.IMAGE_OK)
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("src/test/resources/ImageTest/ok2.jpg")
+            , ImageUtils.IMAGE_OK)
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("src/test/resources/ImageTest/ok3.jpg")
+            , ImageUtils.IMAGE_OK)
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("src/test/resources/ImageTest/ok4.jpg")
+            , ImageUtils.IMAGE_OK)
+    }
+
+    // Refer: testCheckIfImageIsTooDarkCaseException()
+    @Test
+    fun testCheckIfDarkImageIsTooDark() {
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("src/test/resources/ImageTest/dark1.jpg")
+            , ImageUtils.IMAGE_DARK)
+        Assert.assertEquals(ImageUtils.checkIfImageIsTooDark("src/test/resources/ImageTest/dark2.jpg")
+            , ImageUtils.IMAGE_DARK)
     }
 
     @Test

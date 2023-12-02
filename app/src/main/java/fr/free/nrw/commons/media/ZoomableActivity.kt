@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import butterknife.BindView
 import butterknife.ButterKnife
@@ -69,6 +70,8 @@ class ZoomableActivity : BaseActivity() {
     @JvmField
     @BindView(R.id.zoomable)
     var photo: ZoomableDraweeView? = null
+    
+    var photoBackgroundColor: Int? = null
 
     @JvmField
     @BindView(R.id.zoom_progress_bar)
@@ -163,13 +166,29 @@ class ZoomableActivity : BaseActivity() {
             handleResult(it)
         }
 
-        if(prefs.getBoolean(CustomSelectorConstants.FULL_SCREEN_MODE_FIRST_LUNCH, true)) {
-            // show welcome dialog on first launch
-            showWelcomeDialog()
-            prefs.edit().putBoolean(
-                CustomSelectorConstants.FULL_SCREEN_MODE_FIRST_LUNCH,
-                false
-            ).apply()
+        val origin = intent.getStringExtra(ZoomableActivityConstants.ORIGIN);
+
+        /**
+         * If origin is "null" it means that ZoomableActivity was created by the custom picker
+         * (rather than by MediaDetailsFragment) so we need to show the first time popup in
+         * full screen mode if needed.
+         */
+        if (origin == null) {
+            if (prefs.getBoolean(CustomSelectorConstants.FULL_SCREEN_MODE_FIRST_LUNCH, true)) {
+                // show welcome dialog on first launch
+                showWelcomeDialog()
+                prefs.edit().putBoolean(
+                    CustomSelectorConstants.FULL_SCREEN_MODE_FIRST_LUNCH,
+                    false
+                ).apply()
+            }
+        }
+        
+        val backgroundColor = intent.getIntExtra(ZoomableActivityConstants.PHOTO_BACKGROUND_COLOR,
+                MediaDetailFragment.DEFAULT_IMAGE_BACKGROUND_COLOR);
+
+        if (backgroundColor != MediaDetailFragment.DEFAULT_IMAGE_BACKGROUND_COLOR) {
+            photoBackgroundColor = backgroundColor
         }
     }
 
@@ -187,7 +206,7 @@ class ZoomableActivity : BaseActivity() {
     /**
      * Handle view model result.
      */
-    private fun handleResult(result: Result){
+    private fun handleResult(result: Result) {
         if(result.status is CallbackStatus.SUCCESS){
             val images = result.images
             if(images.isNotEmpty()) {
@@ -599,6 +618,10 @@ class ZoomableActivity : BaseActivity() {
                 .setControllerListener(loadingListener)
                 .build()
             photo!!.controller = controller
+            
+            if (photoBackgroundColor != null) {
+                photo!!.setBackgroundColor(photoBackgroundColor!!)
+            }
 
             if (!images.isNullOrEmpty()) {
                 val selectedIndex = getImagePosition(selectedImages, images!![position])
@@ -649,5 +672,16 @@ class ZoomableActivity : BaseActivity() {
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
+    }
+
+    object ZoomableActivityConstants  {
+        /**
+         * Key for Accessing Intent Data Named "Origin", The value indicates what fragment
+         * ZoomableActivity was created by. It is null if ZoomableActivity was created by
+         * the custom picker.
+         */
+        const val ORIGIN = "Origin";
+        
+        const val PHOTO_BACKGROUND_COLOR = "photo_background_color"
     }
 }

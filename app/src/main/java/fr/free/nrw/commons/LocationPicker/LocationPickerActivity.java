@@ -10,7 +10,9 @@ import static fr.free.nrw.commons.upload.mediaDetails.UploadMediaDetailFragment.
 import static fr.free.nrw.commons.upload.mediaDetails.UploadMediaDetailFragment.LAST_ZOOM;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
@@ -29,7 +31,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraPosition.Builder;
@@ -37,8 +38,11 @@ import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
+import com.mapbox.mapboxsdk.location.engine.LocationEngineCallback;
+import com.mapbox.mapboxsdk.location.engine.LocationEngineResult;
 import com.mapbox.mapboxsdk.location.modes.CameraMode;
 import com.mapbox.mapboxsdk.location.modes.RenderMode;
+import com.mapbox.mapboxsdk.location.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMap.OnCameraIdleListener;
@@ -49,10 +53,17 @@ import com.mapbox.mapboxsdk.maps.UiSettings;
 import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
+import fr.free.nrw.commons.MapStyle;
 import fr.free.nrw.commons.R;
 import fr.free.nrw.commons.Utils;
+import fr.free.nrw.commons.filepicker.Constants;
 import fr.free.nrw.commons.kvstore.JsonKvStore;
+import fr.free.nrw.commons.location.LocationPermissionsHelper;
+import fr.free.nrw.commons.location.LocationPermissionsHelper.Dialog;
+import fr.free.nrw.commons.location.LocationPermissionsHelper.LocationPermissionCallback;
+import fr.free.nrw.commons.location.LocationServiceManager;
 import fr.free.nrw.commons.theme.BaseActivity;
+import fr.free.nrw.commons.utils.SystemThemeUtils;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.jetbrains.annotations.NotNull;
@@ -62,7 +73,7 @@ import timber.log.Timber;
  * Helps to pick location and return the result with an intent
  */
 public class LocationPickerActivity extends BaseActivity implements OnMapReadyCallback,
-    OnCameraMoveStartedListener, OnCameraIdleListener, Observer<CameraPosition> {
+    OnCameraMoveStartedListener, OnCameraIdleListener, Observer<CameraPosition>, LocationPermissionCallback {
 
     /**
      * DROPPED_MARKER_LAYER_ID : id for layer
@@ -93,6 +104,10 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
      */
     private String activity;
     /**
+     * location : location
+     */
+    private Location location;
+    /**
      * modifyLocationButton : button for start editing location
      */
     Button modifyLocationButton;
@@ -104,6 +119,10 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
      * placeSelectedButton : fab for selecting location
      */
     FloatingActionButton placeSelectedButton;
+    /**
+     * fabCenterOnLocation: button for center on location;
+     */
+    FloatingActionButton fabCenterOnLocation;
     /**
      * droppedMarkerLayer : Layer for static screen
      */
@@ -127,10 +146,22 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
     @Named("default_preferences")
     public
     JsonKvStore applicationKvStore;
+    /**
+     * isDarkTheme: for keeping a track of the device theme and modifying the map theme accordingly
+     */
+    @Inject
+    SystemThemeUtils systemThemeUtils;
+    private boolean isDarkTheme;
+
+    @Inject
+    LocationServiceManager locationManager;
 
     @Override
     protected void onCreate(@Nullable final Bundle savedInstanceState) {
+        getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
         super.onCreate(savedInstanceState);
+
+        isDarkTheme = systemThemeUtils.isDeviceInNightMode();
 
         getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
         final ActionBar actionBar = getSupportActionBar();
@@ -154,6 +185,7 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
         addPlaceSelectedButton();
         addCredits();
         getToolbarUI();
+        addCenterOnGPSButton();
 
         if ("UploadActivity".equals(activity)) {
             placeSelectedButton.setVisibility(View.GONE);
@@ -162,6 +194,7 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
             largeToolbarText.setText(getResources().getString(R.string.image_location));
             smallToolbarText.setText(getResources().
                 getString(R.string.check_whether_location_is_correct));
+            fabCenterOnLocation.setVisibility(View.GONE);
         }
 
         mapView.onCreate(savedInstanceState);
@@ -180,7 +213,7 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
      * Clicking back button destroy locationPickerActivity
      */
     private void addBackButtonListener() {
-        final ImageView backButton = findViewById(R.id.mapbox_place_picker_toolbar_back_button);
+        final ImageView backButton = findViewById(R.id.maplibre_place_picker_toolbar_back_button);
         backButton.setOnClickListener(view -> finish());
     }
 
@@ -224,7 +257,7 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
     @Override
     public void onMapReady(final MapboxMap mapboxMap) {
         this.mapboxMap = mapboxMap;
-        mapboxMap.setStyle(Style.MAPBOX_STREETS, this::onStyleLoaded);
+        mapboxMap.setStyle(isDarkTheme ? MapStyle.DARK : MapStyle.STREETS, this::onStyleLoaded);
     }
 
     /**
@@ -275,12 +308,13 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
         largeToolbarText.setText(getResources().getString(R.string.choose_a_location));
         smallToolbarText.setText(getResources().getString(R.string.pan_and_zoom_to_adjust));
         bindListeners();
+        fabCenterOnLocation.setVisibility(View.VISIBLE);
     }
 
     /**
      * Show the location in map app
      */
-    public void showInMap(){
+    public void showInMap() {
         Utils.handleGeoCoordinates(this,
             new fr.free.nrw.commons.location.LatLng(cameraPosition.target.getLatitude(),
                 cameraPosition.target.getLongitude(), 0.0f));
@@ -339,6 +373,22 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
             // Set the component's render mode
             locationComponent.setRenderMode(RenderMode.NORMAL);
 
+            // Get the component's location engine to receive user's last location
+            locationComponent.getLocationEngine().getLastLocation(
+                new LocationEngineCallback<LocationEngineResult>() {
+                    @Override
+                    public void onSuccess(LocationEngineResult result) {
+                        location = result.getLastLocation();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                    }
+                });
+
+
+        } else {
+            requestLocationPermissions();
         }
     }
 
@@ -405,6 +455,42 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
         setResult(AppCompatActivity.RESULT_OK, returningIntent);
         finish();
     }
+    /**
+     * Center the camera on the last saved location
+     */
+    private void addCenterOnGPSButton(){
+        fabCenterOnLocation = findViewById(R.id.center_on_gps);
+        fabCenterOnLocation.setOnClickListener(view -> requestLocationPermissions());
+    }
+
+    /**
+     * Center the map at user's current location
+     */
+    private void requestLocationPermissions() {
+        LocationPermissionsHelper.Dialog locationAccessDialog = new Dialog(
+            R.string.location_permission_title,
+            R.string.upload_map_location_access
+        );
+
+        LocationPermissionsHelper.Dialog locationOffDialog = new Dialog(
+            R.string.ask_to_turn_location_on,
+            R.string.upload_map_location_access
+        );
+        LocationPermissionsHelper locationPermissionsHelper = new LocationPermissionsHelper(
+            this, locationManager, this);
+        locationPermissionsHelper.handleLocationPermissions(locationAccessDialog, locationOffDialog);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(final int requestCode, @NonNull final String[] permissions,
+        @NonNull final int[] grantResults) {
+        if (requestCode == Constants.RequestCodes.LOCATION && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            onLocationPermissionGranted();
+        } else {
+            onLocationPermissionDenied("");
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 
     @Override
     protected void onStart() {
@@ -446,5 +532,28 @@ public class LocationPickerActivity extends BaseActivity implements OnMapReadyCa
     public void onLowMemory() {
         super.onLowMemory();
         mapView.onLowMemory();
+    }
+
+    @Override
+    public void onLocationPermissionDenied(String toastMessage) {
+        //do nothing
+    }
+
+    @Override
+    public void onLocationPermissionGranted() {
+        if (mapboxMap.getStyle() != null) {
+            enableLocationComponent(mapboxMap.getStyle());
+        }
+        fr.free.nrw.commons.location.LatLng currLocation = locationManager.getLastLocation();
+        if (currLocation != null) {
+            final CameraPosition position;
+            position = new CameraPosition.Builder()
+                .target(new com.mapbox.mapboxsdk.geometry.LatLng(currLocation.getLatitude(),
+                    currLocation.getLongitude(), 0)) // Sets the new camera position
+                .zoom(mapboxMap.getCameraPosition().zoom) // Same zoom level
+                .build();
+
+            mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
+        }
     }
 }

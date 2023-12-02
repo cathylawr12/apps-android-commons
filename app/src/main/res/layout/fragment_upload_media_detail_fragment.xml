@@ -4,7 +4,8 @@
   xmlns:app="http://schemas.android.com/apk/res-auto"
   xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="match_parent"
-  android:layout_height="match_parent">
+  android:layout_height="match_parent"
+  android:background="?attr/achievementBackground">
 
     <com.github.chrisbanes.photoview.PhotoView
       android:id="@+id/backgroundImage"
@@ -50,7 +51,7 @@
                       android:id="@+id/tooltip"
                       android:layout_width="wrap_content"
                       android:layout_height="match_parent"
-                      android:src="@drawable/mapbox_info_icon_default"/>
+                      android:src="@drawable/maplibre_info_icon_default"/>
                 </LinearLayout>
 
                 <androidx.appcompat.widget.AppCompatImageButton
@@ -141,6 +142,16 @@
                       android:layout_marginRight="@dimen/standard_gap"
                       android:layout_toLeftOf="@+id/btn_next"
                       android:text="@string/previous" />
+                    <Button
+                      android:id="@+id/edit_image"
+                      style="@style/Widget.AppCompat.Button.Borderless"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_marginEnd="@dimen/standard_gap"
+                      android:layout_marginBottom="24dp"
+                      android:layout_toStartOf="@id/btn_previous"
+                      android:contentDescription="Edit Image"
+                      android:text="Edit Image" />
 
                 </RelativeLayout>
 

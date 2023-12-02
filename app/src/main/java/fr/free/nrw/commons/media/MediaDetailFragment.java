@@ -11,10 +11,13 @@ import static fr.free.nrw.commons.description.EditDescriptionConstants.UPDATED_W
 import static fr.free.nrw.commons.description.EditDescriptionConstants.WIKITEXT;
 import static fr.free.nrw.commons.upload.mediaDetails.UploadMediaDetailFragment.LAST_LOCATION;
 import static fr.free.nrw.commons.utils.LangCodeUtils.getLocalizedResources;
+
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.drawable.Animatable;
 import android.net.Uri;
@@ -55,6 +58,7 @@ import com.facebook.imagepipeline.image.ImageInfo;
 import com.facebook.imagepipeline.request.ImageRequest;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import fr.free.nrw.commons.BuildConfig;
 import fr.free.nrw.commons.LocationPicker.LocationPicker;
 import fr.free.nrw.commons.Media;
 import fr.free.nrw.commons.MediaDataExtractor;
@@ -75,12 +79,15 @@ import fr.free.nrw.commons.di.CommonsDaggerSupportFragment;
 import fr.free.nrw.commons.explore.depictions.WikidataItemDetailsActivity;
 import fr.free.nrw.commons.kvstore.JsonKvStore;
 import fr.free.nrw.commons.location.LocationServiceManager;
+import fr.free.nrw.commons.media.ZoomableActivity.ZoomableActivityConstants;
 import fr.free.nrw.commons.profile.ProfileActivity;
 import fr.free.nrw.commons.settings.Prefs;
 import fr.free.nrw.commons.ui.widget.HtmlTextView;
 import fr.free.nrw.commons.upload.categories.UploadCategoriesFragment;
 import fr.free.nrw.commons.upload.depicts.DepictsFragment;
 import fr.free.nrw.commons.upload.UploadMediaDetail;
+import fr.free.nrw.commons.utils.DialogUtil;
+import fr.free.nrw.commons.utils.PermissionUtils;
 import fr.free.nrw.commons.utils.ViewUtilWrapper;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -106,8 +113,11 @@ import timber.log.Timber;
 public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
     CategoryEditHelper.Callback {
 
-    private static final int REQUEST_CODE = 1001 ;
-    private static final int REQUEST_CODE_EDIT_DESCRIPTION = 1002 ;
+    private static final int REQUEST_CODE = 1001;
+    private static final int REQUEST_CODE_EDIT_DESCRIPTION = 1002;
+    private static final String IMAGE_BACKGROUND_COLOR = "image_background_color";
+    static final int DEFAULT_IMAGE_BACKGROUND_COLOR = 0;
+    
     private boolean editable;
     private boolean isCategoryImage;
     private MediaDetailPagerFragment.MediaDetailProvider detailProvider;
@@ -356,11 +366,44 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
     }
 
     @OnClick(R.id.mediaDetailImageViewSpacer)
-    public void launchZoomActivity(View view) {
+    public void launchZoomActivity(final View view) {
+        final boolean hasPermission = PermissionUtils.hasPermission(getActivity(), PermissionUtils.PERMISSIONS_STORAGE);
+        if (hasPermission) {
+            launchZoomActivityAfterPermissionCheck(view);
+        } else {
+            PermissionUtils.checkPermissionsAndPerformAction(getActivity(),
+                () -> {
+                    launchZoomActivityAfterPermissionCheck(view);
+                },
+                R.string.storage_permission_title,
+                R.string.read_storage_permission_rationale,
+                PermissionUtils.PERMISSIONS_STORAGE
+                );
+        }
+    }
+
+    /**
+     * launch zoom acitivity after permission check
+     * @param view as ImageView
+     */
+    private void launchZoomActivityAfterPermissionCheck(final View view) {
         if (media.getImageUrl() != null) {
-            Context ctx = view.getContext();
+            final Context ctx = view.getContext();
+            final Intent zoomableIntent = new Intent(ctx, ZoomableActivity.class);
+            zoomableIntent.setData(Uri.parse(media.getImageUrl()));
+            zoomableIntent.putExtra(
+                ZoomableActivity.ZoomableActivityConstants.ORIGIN, "MediaDetails");
+            
+            int backgroundColor = getImageBackgroundColor();
+            if (backgroundColor != DEFAULT_IMAGE_BACKGROUND_COLOR) {
+                zoomableIntent.putExtra(
+                    ZoomableActivity.ZoomableActivityConstants.PHOTO_BACKGROUND_COLOR,
+                    backgroundColor
+                );
+            }
+            
             ctx.startActivity(
-                new Intent(ctx, ZoomableActivity.class).setData(Uri.parse(media.getImageUrl()))
+                zoomableIntent
             );
         }
     }
@@ -570,16 +613,21 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
      * - when the high resolution image is available, it replaces the low resolution image
      */
     private void setupImageView() {
+        int imageBackgroundColor = getImageBackgroundColor();
+        if (imageBackgroundColor != DEFAULT_IMAGE_BACKGROUND_COLOR) {
+            image.setBackgroundColor(imageBackgroundColor);
+        }
 
         image.getHierarchy().setPlaceholderImage(R.drawable.image_placeholder);
         image.getHierarchy().setFailureImage(R.drawable.image_placeholder);
 
         DraweeController controller = Fresco.newDraweeControllerBuilder()
-                .setLowResImageRequest(ImageRequest.fromUri(media != null ? media.getThumbUrl() : null))
-                .setImageRequest(ImageRequest.fromUri(media != null ? media.getImageUrl() : null))
-                .setControllerListener(aspectRatioListener)
-                .setOldController(image.getController())
-                .build();
+            .setLowResImageRequest(ImageRequest.fromUri(media != null ? media.getThumbUrl() : null))
+            .setRetainImageOnFailure(true)
+            .setImageRequest(ImageRequest.fromUri(media != null ? media.getImageUrl() : null))
+            .setControllerListener(aspectRatioListener)
+            .setOldController(image.getController())
+            .build();
         image.setController(controller);
     }
 
@@ -1044,7 +1092,7 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
 
         } else if (requestCode == REQUEST_CODE && resultCode == RESULT_CANCELED) {
             viewUtil.showShortToast(getContext(),
-                Objects.requireNonNull(getContext())
+                requireContext()
                     .getString(R.string.coordinates_picking_unsuccessful));
 
         } else if (requestCode == REQUEST_CODE_EDIT_DESCRIPTION && resultCode == RESULT_CANCELED) {
@@ -1095,15 +1143,15 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
                 spinner.setAdapter(languageAdapter);
                 spinner.setGravity(17);
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-                builder.setView(spinner);
-                builder.setTitle(R.string.nominate_delete)
-                    .setPositiveButton(R.string.about_translate_proceed,
-                        (dialog, which) -> onDeleteClicked(spinner));
-                builder.setNegativeButton(R.string.about_translate_cancel,
-                    (dialog, which) -> dialog.dismiss());
-                AlertDialog dialog = builder.create();
-                dialog.show();
+                AlertDialog dialog = DialogUtil.showAlertDialog(getActivity(),
+                    getString(R.string.nominate_delete),
+                    null,
+                    getString(R.string.about_translate_proceed),
+                    getString(R.string.about_translate_cancel),
+                    () -> onDeleteClicked(spinner),
+                    () -> {},
+                    spinner,
+                    true);
                 if (isDeleted) {
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
                 }
@@ -1112,19 +1160,20 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
             //But how does this  if (delete.getVisibility() == View.VISIBLE) {
             //            enableDeleteButton(true);   makes sense ?
             else {
-                AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
-                alert.setMessage(
-                    getString(R.string.dialog_box_text_nomination, media.getDisplayTitle()));
                 final EditText input = new EditText(getActivity());
-                alert.setView(input);
                 input.requestFocus();
-                alert.setPositiveButton(R.string.ok, (dialog1, whichButton) -> {
-                    String reason = input.getText().toString();
-                    onDeleteClickeddialogtext(reason);
-                });
-                alert.setNegativeButton(R.string.cancel, (dialog12, whichButton) -> {
-                });
-                AlertDialog d = alert.create();
+                AlertDialog d = DialogUtil.showAlertDialog(getActivity(),
+                    null,
+                    getString(R.string.dialog_box_text_nomination, media.getDisplayTitle()),
+                    getString(R.string.ok),
+                    getString(R.string.cancel),
+                    () -> {
+                        String reason = input.getText().toString();
+                        onDeleteClickeddialogtext(reason);
+                    },
+                    () -> {},
+                    input,
+                    true);
                 input.addTextChangedListener(new TextWatcher() {
                     private void handleText() {
                         final Button okButton = d.getButton(AlertDialog.BUTTON_POSITIVE);
@@ -1148,7 +1197,6 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
                     }
                 });
-                d.show();
                 d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             }
         }
@@ -1199,6 +1247,12 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
     @OnClick(R.id.mediaDetailAuthor)
     public void onAuthorViewClicked() {
         if (media == null || media.getUser() == null) {
+            return;
+        }
+        if (sessionManager.getUserName() == null) {
+            String userProfileLink = BuildConfig.COMMONS_URL + "/wiki/User:" + media.getUser();
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(userProfileLink));
+            startActivity(browserIntent);
             return;
         }
         ProfileActivity.startYourself(getActivity(), media.getUser(), !Objects
@@ -1435,5 +1489,29 @@ public class MediaDetailFragment extends CommonsDaggerSupportFragment implements
 
     public interface Callback {
         void nominatingForDeletion(int index);
+    }
+    
+    /**
+     * Called when the image background color is changed.
+     * You should pass a useable color, not a resource id.
+     * @param color
+     */
+    public void onImageBackgroundChanged(int color) {
+        int currentColor = getImageBackgroundColor();
+        if (currentColor == color) {
+            return;
+        }
+
+        image.setBackgroundColor(color);
+        getImageBackgroundColorPref().edit().putInt(IMAGE_BACKGROUND_COLOR, color).apply();
+    }
+
+    private SharedPreferences getImageBackgroundColorPref() {
+        return getContext().getSharedPreferences(IMAGE_BACKGROUND_COLOR + media.getPageId(), Context.MODE_PRIVATE);
+    }
+
+    private int getImageBackgroundColor() {
+        SharedPreferences imageBackgroundColorPref = this.getImageBackgroundColorPref();
+        return imageBackgroundColorPref.getInt(IMAGE_BACKGROUND_COLOR, DEFAULT_IMAGE_BACKGROUND_COLOR);
     }
 }

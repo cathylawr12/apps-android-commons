@@ -1,9 +1,9 @@
 package fr.free.nrw.commons.media
 
-import org.robolectric.shadows.ShadowActivity
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Looper
@@ -15,28 +15,28 @@ import android.webkit.WebView
 import android.widget.*
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
-import androidx.recyclerview.widget.RecyclerView
+import androidx.test.core.app.ApplicationProvider
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.generic.GenericDraweeHierarchy
 import com.facebook.drawee.view.SimpleDraweeView
 import com.facebook.soloader.SoLoader
 import com.nhaarman.mockitokotlin2.whenever
+import com.nhaarman.mockitokotlin2.doReturn
 import fr.free.nrw.commons.LocationPicker.LocationPickerActivity
-import org.robolectric.Shadows.shadowOf
+import fr.free.nrw.commons.Media
+import fr.free.nrw.commons.R
+import fr.free.nrw.commons.TestAppAdapter
+import fr.free.nrw.commons.TestCommonsApplication
+import fr.free.nrw.commons.delete.DeleteHelper
+import fr.free.nrw.commons.delete.ReasonBuilder
 import fr.free.nrw.commons.explore.SearchActivity
 import fr.free.nrw.commons.kvstore.JsonKvStore
 import fr.free.nrw.commons.location.LatLng
 import fr.free.nrw.commons.location.LocationServiceManager
 import fr.free.nrw.commons.ui.widget.HtmlTextView
+import io.reactivex.Single
 import org.junit.Assert
 import org.junit.Before
-import fr.free.nrw.commons.TestCommonsApplication
-import fr.free.nrw.commons.R
-import fr.free.nrw.commons.TestAppAdapter
-import fr.free.nrw.commons.Media
-import fr.free.nrw.commons.delete.DeleteHelper
-import fr.free.nrw.commons.delete.ReasonBuilder
-import io.reactivex.Single
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.*
@@ -44,17 +44,16 @@ import org.mockito.Mockito.*
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
+import org.robolectric.shadows.ShadowActivity
 import org.robolectric.shadows.ShadowIntent
 import org.wikipedia.AppAdapter
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [21], application = TestCommonsApplication::class)
@@ -63,15 +62,11 @@ class MediaDetailFragmentUnitTests {
 
     private val REQUEST_CODE = 1001
     private val LAST_LOCATION = "last_location_while_uploading"
-    private val REQUEST_CODE_EDIT_DESCRIPTION = 1002
     private lateinit var fragment: MediaDetailFragment
     private lateinit var fragmentManager: FragmentManager
     private lateinit var layoutInflater: LayoutInflater
     private lateinit var view: View
     private lateinit var context: Context
-
-    private val NOMINATING_FOR_DELETION_MEDIA = "Nominating for deletion %s"
-
 
     @Mock
     private lateinit var deleteHelper: DeleteHelper
@@ -140,25 +135,30 @@ class MediaDetailFragmentUnitTests {
     private lateinit var listView: ListView
 
     @Mock
-    private lateinit var searchView: SearchView
-
-    @Mock
     private lateinit var intent: Intent
 
     private lateinit var activity: SearchActivity
+    
+    @Mock
+    private lateinit var mockContext: Context
+    
+    @Mock
+    private lateinit var mockSharedPreferences: SharedPreferences
+    
+    @Mock
+    private lateinit var mockSharedPreferencesEditor:  SharedPreferences.Editor
 
     @Before
     fun setUp() {
 
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
 
-        context = RuntimeEnvironment.application.applicationContext
-
+        context = ApplicationProvider.getApplicationContext()
         AppAdapter.set(TestAppAdapter())
 
         SoLoader.setInTestMode()
 
-        Fresco.initialize(RuntimeEnvironment.application.applicationContext)
+        Fresco.initialize(ApplicationProvider.getApplicationContext())
 
         activity = Robolectric.buildActivity(SearchActivity::class.java).create().get()
 
@@ -219,6 +219,10 @@ class MediaDetailFragmentUnitTests {
         val map = HashMap<String, String>()
         map[Locale.getDefault().language] = ""
         `when`(media.descriptions).thenReturn(map)
+
+        doReturn(mockSharedPreferences).`when`(mockContext).getSharedPreferences(anyString(), anyInt())
+        doReturn(mockSharedPreferencesEditor).`when`(mockSharedPreferences).edit()
+        doReturn(mockSharedPreferencesEditor).`when`(mockSharedPreferencesEditor).putInt(anyString(), anyInt())
     }
 
     @Test
@@ -811,5 +815,31 @@ class MediaDetailFragmentUnitTests {
         )
         method.isAccessible = true
         method.invoke(fragment, media)
+    }
+    
+    @Test
+    fun testOnImageBackgroundChangedWithDifferentColor() {
+        val spyFragment = spy(fragment)
+        val color = 0xffffff
+        doReturn(mockContext).`when`(spyFragment).context
+        doReturn(-1).`when`(mockSharedPreferences).getInt(anyString(), anyInt())
+
+        spyFragment.onImageBackgroundChanged(color)
+
+        verify(simpleDraweeView, times(1)).setBackgroundColor(color) 
+        verify(mockSharedPreferencesEditor, times(1)).putInt(anyString(), anyInt())
+    }
+
+
+    @Test
+    fun testOnImageBackgroundChangedWithSameColor() {
+        val spyFragment = spy(fragment)
+        val color = 0
+        doReturn(mockContext).`when`(spyFragment).context
+        doReturn(color).`when`(mockSharedPreferences).getInt(anyString(), anyInt())
+
+        spyFragment.onImageBackgroundChanged(color)
+        verify(simpleDraweeView, never()).setBackgroundColor(anyInt())
+        verify(mockSharedPreferencesEditor, never()).putInt(anyString(), anyInt())
     }
 }

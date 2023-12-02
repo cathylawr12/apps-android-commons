@@ -7,10 +7,7 @@ import static fr.free.nrw.commons.utils.ImageUtils.FILE_NAME_EXISTS;
 import static fr.free.nrw.commons.utils.ImageUtils.IMAGE_KEEP;
 import static fr.free.nrw.commons.utils.ImageUtils.IMAGE_OK;
 
-import android.location.Address;
-import android.location.Geocoder;
 import androidx.annotation.Nullable;
-import fr.free.nrw.commons.CommonsApplication;
 import fr.free.nrw.commons.R;
 import fr.free.nrw.commons.filepicker.UploadableFile;
 import fr.free.nrw.commons.kvstore.JsonKvStore;
@@ -23,17 +20,19 @@ import fr.free.nrw.commons.upload.UploadItem;
 import fr.free.nrw.commons.upload.UploadMediaDetail;
 import fr.free.nrw.commons.upload.mediaDetails.UploadMediaDetailsContract.UserActionListener;
 import fr.free.nrw.commons.upload.mediaDetails.UploadMediaDetailsContract.View;
+import io.github.coordinates2country.Coordinates2Country;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +56,7 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
     private Scheduler mainThreadScheduler;
 
     private final List<String> WLM_SUPPORTED_COUNTRIES= Arrays.asList("am","at","az","br","hr","sv","fi","fr","de","gh","in","ie","il","mk","my","mt","pk","pe","pl","ru","rw","si","es","se","tw","ug","ua","us");
+    private Map<String, String> countryNamesAndCodes = null;
 
     @Inject
     public UploadMediaPresenter(UploadRepository uploadRepository,
@@ -87,11 +87,12 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
      * @param place
      */
     @Override
-    public void receiveImage(final UploadableFile uploadableFile, final Place place) {
+    public void receiveImage(final UploadableFile uploadableFile, final Place place,
+                            LatLng inAppPictureLocation) {
         view.showProgress(true);
         compositeDisposable.add(
             repository
-                .preProcessImage(uploadableFile, place, this)
+                .preProcessImage(uploadableFile, place, this, inAppPictureLocation)
                 .map(uploadItem -> {
                     if(place!=null && place.isMonument()){
                         if (place.location != null) {
@@ -124,22 +125,32 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
 
     @Nullable
     private String reverseGeoCode(final LatLng latLng){
-        final Geocoder geocoder = new Geocoder(
-            CommonsApplication.getInstance().getApplicationContext(), Locale
-            .getDefault());
-        try {
-            final List<Address> addresses = geocoder
-                .getFromLocation(latLng.getLatitude(), latLng.getLongitude(), 1);
-            for (final Address address : addresses) {
-                if (address != null && address.getCountryCode() != null) {
-                    String countryCode = address.getCountryCode();
-                    return countryCode;
-                }
-            }
-        } catch (final IOException e) {
-            Timber.e(e);
+        if(countryNamesAndCodes == null){
+            countryNamesAndCodes = getCountryNamesAndCodes();
         }
-        return null;
+        return countryNamesAndCodes.get(Coordinates2Country.country(latLng.getLatitude(), latLng.getLongitude()));
+    }
+
+    /**
+     * Creates HashMap containing all ISO countries 2-letter codes provided by <code>Locale.getISOCountries()</code>
+     * and their english names
+     *
+     * @return HashMap where Key is country english name and Value is 2-letter country code
+     * e.g. ["Germany":"DE", ...]
+     */
+    private Map<String, String> getCountryNamesAndCodes(){
+        final Map<String, String> result = new HashMap<>();
+
+        final String[] isoCountries = Locale.getISOCountries();
+
+        for (final String isoCountry : isoCountries) {
+            result.put(
+                new Locale("en", isoCountry).getDisplayCountry(Locale.ENGLISH),
+                isoCountry
+            );
+        }
+
+        return result;
     }
 
     /**
@@ -167,15 +178,22 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
      * @param uploadItemIndex
      */
     @Override
-    public void verifyImageQuality(int uploadItemIndex) {
-      final UploadItem uploadItem = repository.getUploads().get(uploadItemIndex);
+    public boolean verifyImageQuality(int uploadItemIndex, LatLng inAppPictureLocation) {
+      final List<UploadItem> uploadItems = repository.getUploads();
+      if (uploadItems.size()==0) {
+          view.showProgress(false);
+          // No internationalization required for this error message because it's an internal error.
+          view.showMessage("Internal error: Zero upload items received by the Upload Media Detail Fragment. Sorry, please upload again.",R.color.color_error);
+          return false;
+      }
+      UploadItem uploadItem = uploadItems.get(uploadItemIndex);
 
-      if (uploadItem.getGpsCoords().getDecimalCoords() == null) {
+      if (uploadItem.getGpsCoords().getDecimalCoords() == null && inAppPictureLocation == null) {
           final Runnable onSkipClicked = () -> {
               view.showProgress(true);
               compositeDisposable.add(
                   repository
-                      .getImageQuality(uploadItem)
+                      .getImageQuality(uploadItem, inAppPictureLocation)
                       .observeOn(mainThreadScheduler)
                       .subscribe(imageResult -> {
                               view.showProgress(false);
@@ -198,7 +216,7 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
           view.showProgress(true);
           compositeDisposable.add(
               repository
-                  .getImageQuality(uploadItem)
+                  .getImageQuality(uploadItem, inAppPictureLocation)
                   .observeOn(mainThreadScheduler)
                   .subscribe(imageResult -> {
                           view.showProgress(false);
@@ -216,6 +234,7 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
                       })
           );
       }
+      return true;
     }
 
 
@@ -263,6 +282,11 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
   }
 
   @Override
+  public void onEditButtonClicked(int indexInViewFlipper){
+      view.showEditActivity(repository.getUploads().get(indexInViewFlipper));
+  }
+
+  @Override
   public void onUserConfirmedUploadIsOfPlace(Place place, int uploadItemPosition) {
     final List<UploadMediaDetail> uploadMediaDetails = repository.getUploads()
         .get(uploadItemPosition)
@@ -304,18 +328,23 @@ public class UploadMediaPresenter implements UserActionListener, SimilarImageInt
             uploadItem.setHasInvalidLocation(true);
         }
 
-        switch (errorCode) {
-            case EMPTY_CAPTION:
-                Timber.d("Captions are empty. Showing toast");
-                view.showMessage(R.string.add_caption_toast, R.color.color_error);
-                break;
-            case FILE_NAME_EXISTS:
-                Timber.d("Trying to show duplicate picture popup");
-                view.showDuplicatePicturePopup(uploadItem);
-                break;
-            default:
-                view.showBadImagePopup(errorCode, uploadItem);
+        // If errorCode is empty caption show message
+        if (errorCode == EMPTY_CAPTION) {
+            Timber.d("Captions are empty. Showing toast");
+            view.showMessage(R.string.add_caption_toast, R.color.color_error);
         }
+
+        // If image with same file name exists check the bit in errorCode is set or not
+        if ((errorCode & FILE_NAME_EXISTS) != 0) {
+            Timber.d("Trying to show duplicate picture popup");
+            view.showDuplicatePicturePopup(uploadItem);
+        }
+
+        // If image has some other problems, show popup accordingly
+        if (errorCode != EMPTY_CAPTION && errorCode != FILE_NAME_EXISTS) {
+            view.showBadImagePopup(errorCode, uploadItem);
+        }
+
     }
 
     /**

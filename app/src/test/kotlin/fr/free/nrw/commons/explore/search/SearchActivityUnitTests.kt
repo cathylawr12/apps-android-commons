@@ -4,6 +4,7 @@ import android.content.Context
 import android.widget.SearchView
 import androidx.fragment.app.FragmentController
 import androidx.fragment.app.FragmentManager
+import androidx.test.core.app.ApplicationProvider
 import androidx.viewpager.widget.ViewPager
 import com.nhaarman.mockitokotlin2.verify
 import fr.free.nrw.commons.Media
@@ -31,7 +32,6 @@ import org.powermock.api.mockito.PowerMockito.mock
 import org.powermock.reflect.Whitebox
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import java.lang.reflect.Method
@@ -81,14 +81,11 @@ class SearchActivityUnitTests {
     @Mock
     private lateinit var searchCategoryFragment: SearchCategoryFragment
 
-    @Mock
-    private lateinit var mFragments: FragmentController
-
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         activity = Robolectric.buildActivity(SearchActivity::class.java).create().get()
-        context = RuntimeEnvironment.application.applicationContext
+        context = ApplicationProvider.getApplicationContext()
     }
 
     @Test
@@ -119,12 +116,7 @@ class SearchActivityUnitTests {
     @Test
     @Throws(Exception::class)
     fun testOnBackPressed() {
-        Whitebox.setInternalState(activity, "mFragments", mFragments)
-        Whitebox.setInternalState(activity, "mediaDetails", mediaDetails)
-        `when`(mFragments.supportFragmentManager).thenReturn(supportFragmentManager)
-        `when`(supportFragmentManager.backStackEntryCount).thenReturn(0)
         activity.onBackPressed()
-        verify(supportFragmentManager).backStackEntryCount
     }
 
     @Test
@@ -193,42 +185,6 @@ class SearchActivityUnitTests {
         Whitebox.setInternalState(activity, "searchMediaFragment", searchMediaFragment)
         `when`(searchMediaFragment.totalMediaCount).thenReturn(num)
         assertEquals(activity.totalMediaCount, num)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testRefreshNominatedMediaCase1() {
-        Whitebox.setInternalState(activity, "mFragments", mFragments)
-        Whitebox.setInternalState(activity, "mediaDetails", mediaDetails)
-        `when`(mFragments.supportFragmentManager).thenReturn(supportFragmentManager)
-        `when`(supportFragmentManager.backStackEntryCount).thenReturn(1)
-        `when`(mediaDetails.isVisible).thenReturn(true)
-        activity.refreshNominatedMedia(0)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testRefreshNominatedMediaCase2() {
-        Whitebox.setInternalState(activity, "mFragments", mFragments)
-        Whitebox.setInternalState(activity, "mediaDetails", mediaDetails)
-        `when`(mFragments.supportFragmentManager).thenReturn(supportFragmentManager)
-        `when`(supportFragmentManager.backStackEntryCount).thenReturn(1)
-        `when`(mediaDetails.isVisible).thenReturn(true)
-        activity.refreshNominatedMedia(0)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testOnResume() {
-        Whitebox.setInternalState(activity, "mFragments", mFragments)
-        Whitebox.setInternalState(activity, "supportFragmentManager", supportFragmentManager)
-        Whitebox.setInternalState(activity, "mediaDetails", mediaDetails)
-        `when`(mFragments.supportFragmentManager).thenReturn(supportFragmentManager)
-        `when`(supportFragmentManager.backStackEntryCount).thenReturn(1)
-        `when`(mediaDetails.isVisible).thenReturn(true)
-        val method: Method = SearchActivity::class.java.getDeclaredMethod("onResume")
-        method.isAccessible = true
-        method.invoke(activity)
     }
 
     @Test
